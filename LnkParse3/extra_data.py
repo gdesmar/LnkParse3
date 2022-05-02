@@ -13,12 +13,14 @@ class ExtraData:
     def __init__(self, indata=None, cp=None):
         self.cp = cp
         self._raw = indata
+        self._size = None  # Lazy loading
 
     def __iter__(self):
         return self._iter()
 
     def _iter(self):
         rest = self._raw
+        length = 0
         while rest:
             factory = ExtraFactory(indata=rest)
             size = factory.item_size()
@@ -26,11 +28,19 @@ class ExtraData:
             if not size:
                 break
 
+            length += size
             data, rest = rest[:size], rest[size:]
 
             cls = factory.extra_class()
             if cls:
                 yield cls(indata=data, cp=self.cp)
+
+        self._size = length
+
+    def size(self):
+        if self._size is None:
+            [x for x in self]
+        return self._size
 
     def as_dict(self):
         res = {}

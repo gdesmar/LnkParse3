@@ -4,17 +4,17 @@ __description__ = "Windows Shortcut file (LNK) parser"
 __author__ = "Matmaus"
 __version__ = "1.2.0"
 
-import json
-import datetime
 import argparse
+import datetime
+import json
 from subprocess import list2cmdline
 
-from LnkParse3.lnk_header import LnkHeader
-from LnkParse3.lnk_targets import LnkTargets
-from LnkParse3.lnk_info import LnkInfo
-from LnkParse3.info_factory import InfoFactory
-from LnkParse3.string_data import StringData
 from LnkParse3.extra_data import ExtraData
+from LnkParse3.info_factory import InfoFactory
+from LnkParse3.lnk_header import LnkHeader
+from LnkParse3.lnk_info import LnkInfo
+from LnkParse3.lnk_targets import LnkTargets
+from LnkParse3.string_data import StringData
 
 
 class LnkFile(object):
@@ -86,6 +86,11 @@ class LnkFile(object):
 
         # Parse Extra Data
         self.extras = ExtraData(indata=self.indata[index:], cp=self.cp)
+        index += self.extras.size()
+
+        self.appended_data = None
+        if len(self.indata[index:]) > 4 and self.indata[index : index + 4] == b"\x00\x00\x00\x00":
+            self.appended_data = self.indata[index + 4 :]
 
     def print_lnk_file(self, print_all=False):
         def cprint(text, level=0):
@@ -103,13 +108,11 @@ class LnkFile(object):
         cprint("Header Size: %s" % self.header.size(), 1)
         cprint("Link CLSID: %s" % self.header.link_cls_id(), 1)
         cprint(
-            "Link Flags: %s - (%s)"
-            % (self.format_linkFlags(), self.header.r_link_flags()),
+            "Link Flags: %s - (%s)" % (self.format_linkFlags(), self.header.r_link_flags()),
             1,
         )
         cprint(
-            "File Flags: %s - (%s)"
-            % (self.format_fileFlags(), self.header.r_file_flags()),
+            "File Flags: %s - (%s)" % (self.format_fileFlags(), self.header.r_file_flags()),
             1,
         )
         cprint("")
@@ -118,8 +121,7 @@ class LnkFile(object):
         cprint("Accessed Timestamp: %s" % (self.header.access_time()), 1)
         cprint("")
         cprint(
-            "File Size: %s (r: %s)"
-            % (str(self.header.file_size()), str(len(self.indata))),
+            "File Size: %s (r: %s)" % (str(self.header.file_size()), str(len(self.indata))),
             1,
         )
         cprint("Icon Index: %s " % (str(self.header.icon_index())), 1)
@@ -150,8 +152,7 @@ class LnkFile(object):
             cprint("Volume ID offset: %s" % self.info.volume_id_offset(), 2)
             cprint("Local base path offset: %s" % self.info.local_base_path_offset(), 2)
             cprint(
-                "Common network relative link offset: %s"
-                % self.info.common_network_relative_link_offset(),
+                "Common network relative link offset: %s" % self.info.common_network_relative_link_offset(),
                 2,
             )
             cprint(
@@ -164,22 +165,17 @@ class LnkFile(object):
                 cprint("Common path suffix: %s" % self.info.common_path_suffix(), 2)
             if self.info.local_base_path_offset_unicode():
                 cprint(
-                    "Local base path offset unicode: %s"
-                    % self.info.local_base_path_offset_unicode(),
+                    "Local base path offset unicode: %s" % self.info.local_base_path_offset_unicode(),
                     2,
                 )
-                cprint(
-                    "Local base unicode: %s" % self.info.local_base_path_unicode(), 2
-                )
+                cprint("Local base unicode: %s" % self.info.local_base_path_unicode(), 2)
             if self.info.common_path_suffix_offset_unicode():
                 cprint(
-                    "Common path suffix offset unicode: %s"
-                    % self.info.common_path_suffix_offset_unicode(),
+                    "Common path suffix offset unicode: %s" % self.info.common_path_suffix_offset_unicode(),
                     2,
                 )
                 cprint(
-                    "Common path suffix unicode: %s"
-                    % self.info.common_path_suffix_unicode(),
+                    "Common path suffix unicode: %s" % self.info.common_path_suffix_unicode(),
                     2,
                 )
             if type(self.info).__name__ == "Local":
@@ -192,35 +188,27 @@ class LnkFile(object):
                 cprint("Volume label: %s" % self.info.volume_label(), 3)
                 if self.info.common_network_relative_link():
                     cprint(
-                        "Common network relative link: %s"
-                        % self.info.common_network_relative_link(),
+                        "Common network relative link: %s" % self.info.common_network_relative_link(),
                         3,
                     )
                 if self.info.volume_label_unicode_offset():
                     cprint(
-                        "Volume label unicode offset: %s"
-                        % self.info.volume_label_unicode_offset(),
+                        "Volume label unicode offset: %s" % self.info.volume_label_unicode_offset(),
                         3,
                     )
-                    cprint(
-                        "Volume label unicode: %s" % self.info.volume_label_unicode(), 3
-                    )
+                    cprint("Volume label unicode: %s" % self.info.volume_label_unicode(), 3)
             elif type(self.info).__name__ == "Network":
                 cprint(
-                    "Common network relative link size: %s"
-                    % self.info.common_network_relative_link_size(),
+                    "Common network relative link size: %s" % self.info.common_network_relative_link_size(),
                     3,
                 )
                 cprint(
-                    "Common network relative link flags: %s"
-                    % self.info.common_network_relative_link_flags(),
+                    "Common network relative link flags: %s" % self.info.common_network_relative_link_flags(),
                     3,
                 )
                 cprint("Net name offset: %s" % self.info.net_name_offset(), 3)
                 cprint("Device name offset: %s" % self.info.device_name_offset(), 3)
-                cprint(
-                    "Network provider type: %s" % self.info.r_network_provider_type(), 3
-                )
+                cprint("Network provider type: %s" % self.info.r_network_provider_type(), 3)
                 if self.info.network_provider_type():
                     cprint(
                         "Network provider type: %s" % self.info.network_provider_type(),
@@ -228,20 +216,16 @@ class LnkFile(object):
                     )
                 if self.info.net_name_offset_unicode():
                     cprint(
-                        "Net name offset unicode: %s"
-                        % self.info.net_name_offset_unicode(),
+                        "Net name offset unicode: %s" % self.info.net_name_offset_unicode(),
                         3,
                     )
                     cprint("Net name unicode: %s" % self.info.net_name_unicode(), 3)
                 if self.info.device_name_offset_unicode():
                     cprint(
-                        "Device name offset unicode: %s"
-                        % self.info.device_name_offset_unicode(),
+                        "Device name offset unicode: %s" % self.info.device_name_offset_unicode(),
                         3,
                     )
-                    cprint(
-                        "Device name unicode: %s" % self.info.device_name_unicode(), 3
-                    )
+                    cprint("Device name unicode: %s" % self.info.device_name_unicode(), 3)
                 if self.info.net_name():
                     cprint("Net name: %s" % self.info.net_name(), 3)
                 if self.info.device_name():
@@ -354,19 +338,11 @@ class LnkFile(object):
             if self.info.common_path_suffix_offset():
                 res["link_info"]["common_path_suffix"] = self.info.common_path_suffix()
             if self.info.local_base_path_offset_unicode():
-                res["link_info"][
-                    "local_base_path_offset_unicode"
-                ] = self.info.local_base_path_offset_unicode()
-                res["link_info"][
-                    "local_base_path_unicode"
-                ] = self.info.local_base_path_unicode()
+                res["link_info"]["local_base_path_offset_unicode"] = self.info.local_base_path_offset_unicode()
+                res["link_info"]["local_base_path_unicode"] = self.info.local_base_path_unicode()
             if self.info.common_path_suffix_offset_unicode():
-                res["link_info"][
-                    "common_path_suffix_offset_unicode"
-                ] = self.info.common_path_suffix_offset_unicode()
-                res["link_info"][
-                    "common_path_suffix_unicode"
-                ] = self.info.common_path_suffix_unicode()
+                res["link_info"]["common_path_suffix_offset_unicode"] = self.info.common_path_suffix_offset_unicode()
+                res["link_info"]["common_path_suffix_unicode"] = self.info.common_path_suffix_unicode()
 
             res["link_info"]["location_info"] = {}
             if type(self.info).__name__ == "Local":
@@ -389,9 +365,7 @@ class LnkFile(object):
                     res["link_info"]["location_info"][
                         "volume_label_unicode_offset"
                     ] = self.info.volume_label_unicode_offset()
-                    res["link_info"]["location_info"][
-                        "volume_label_unicode"
-                    ] = self.info.volume_label_unicode()
+                    res["link_info"]["location_info"]["volume_label_unicode"] = self.info.volume_label_unicode()
             elif type(self.info).__name__ == "Network":
                 res["link_info"]["location"] = self.info.location()
                 res["link_info"]["location_info"] = {
@@ -402,29 +376,19 @@ class LnkFile(object):
                     "r_network_provider_type": self.info.r_network_provider_type(),
                 }
                 if self.info.network_provider_type():
-                    res["link_info"]["location_info"][
-                        "network_provider_type"
-                    ] = self.info.network_provider_type()
+                    res["link_info"]["location_info"]["network_provider_type"] = self.info.network_provider_type()
                 if self.info.net_name_offset_unicode():
-                    res["link_info"]["location_info"][
-                        "net_name_offset_unicode"
-                    ] = self.info.net_name_offset_unicode()
-                    res["link_info"]["location_info"][
-                        "net_name_unicode"
-                    ] = self.info.net_name_unicode()
+                    res["link_info"]["location_info"]["net_name_offset_unicode"] = self.info.net_name_offset_unicode()
+                    res["link_info"]["location_info"]["net_name_unicode"] = self.info.net_name_unicode()
                 if self.info.device_name_offset_unicode():
                     res["link_info"]["location_info"][
                         "device_name_offset_unicode"
                     ] = self.info.device_name_offset_unicode()
-                    res["link_info"]["location_info"][
-                        "device_name_unicode"
-                    ] = self.info.device_name_unicode()
+                    res["link_info"]["location_info"]["device_name_unicode"] = self.info.device_name_unicode()
                 if self.info.net_name():
                     res["link_info"]["location_info"]["net_name"] = self.info.net_name()
                 if self.info.device_name():
-                    res["link_info"]["location_info"][
-                        "device_name"
-                    ] = self.info.device_name()
+                    res["link_info"]["location_info"]["device_name"] = self.info.device_name()
 
         if not get_all:
             res["header"].pop("header_size", None)
@@ -437,19 +401,11 @@ class LnkFile(object):
             res["link_info"].pop("local_base_path_offset", None)
             res["link_info"].pop("common_network_relative_link_offset", None)
             res["link_info"].pop("common_path_suffix_offset", None)
-            if (
-                "location" in res["link_info"]
-                and "Local" in res["link_info"]["location"]
-            ):
+            if "location" in res["link_info"] and "Local" in res["link_info"]["location"]:
                 res["link_info"]["location_info"].pop("volume_id_size", None)
                 res["link_info"]["location_info"].pop("volume_label_offset", None)
-            if (
-                "location" in res["link_info"]
-                and "Network" in res["link_info"]["location"]
-            ):
-                res["link_info"]["location_info"].pop(
-                    "common_network_relative_link_size", None
-                )
+            if "location" in res["link_info"] and "Network" in res["link_info"]["location"]:
+                res["link_info"]["location_info"].pop("common_network_relative_link_size", None)
                 res["link_info"]["location_info"].pop("net_name_offset", None)
                 res["link_info"]["location_info"].pop("device_name_offset", None)
 
@@ -471,12 +427,8 @@ def main():
         metavar="FILE",
         help="absolute or relative path to the file",
     )
-    arg_parser.add_argument(
-        "-t", "--target", action="store_true", help="print shortcut target only"
-    )
-    arg_parser.add_argument(
-        "-j", "--json", action="store_true", help="print output in JSON"
-    )
+    arg_parser.add_argument("-t", "--target", action="store_true", help="print shortcut target only")
+    arg_parser.add_argument("-j", "--json", action="store_true", help="print output in JSON")
     arg_parser.add_argument(
         "-c",
         "--codepage",
