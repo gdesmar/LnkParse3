@@ -23,7 +23,10 @@ class ExtraData:
         length = 0
         while rest:
             factory = ExtraFactory(indata=rest)
-            size = factory.item_size()
+            try:
+                size = factory.item_size()
+            except StructError:
+                break
 
             if not size:
                 break
