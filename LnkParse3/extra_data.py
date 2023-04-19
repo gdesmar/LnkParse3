@@ -31,12 +31,16 @@ class ExtraData:
             if not size:
                 break
 
-            length += size
             data, rest = rest[:size], rest[size:]
 
-            cls = factory.extra_class()
-            if cls:
-                yield cls(indata=data, cp=self.cp)
+            try:
+                cls = factory.extra_class()
+                if cls:
+                    yield cls(indata=data, cp=self.cp)
+            except StructError:
+                break
+
+            length += size
 
         self._size = length
 

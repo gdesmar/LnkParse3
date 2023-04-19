@@ -10,6 +10,7 @@ from LnkParse3.extra.shim_layer import ShimLayer
 from LnkParse3.extra.metadata import Metadata
 from LnkParse3.extra.known_folder import KnownFolder
 from LnkParse3.extra.shell_item import ShellItem
+from LnkParse3.extra.unknown import UnknownExtra
 
 """
 ------------------------------------------------------------------
@@ -52,4 +53,4 @@ class ExtraFactory:
 
     def extra_class(self):
         sig = str(hex(self._rsig()))[2:]  # huh?
-        return self.EXTRA_SIGS.get(sig)
+        return self.EXTRA_SIGS.get(sig, UnknownExtra)

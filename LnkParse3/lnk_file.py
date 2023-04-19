@@ -89,8 +89,8 @@ class LnkFile(object):
         index += self.extras.size()
 
         self.appended_data = None
-        if len(self.indata[index:]) > 4 and self.indata[index : index + 4] == b"\x00\x00\x00\x00":
-            self.appended_data = self.indata[index + 4 :]
+        if len(self.indata[index:]) > 4 and self.indata[index: index + 4] == b"\x00\x00\x00\x00":
+            self.appended_data = self.indata[index + 4:]
 
     def print_lnk_file(self, print_all=False):
         def cprint(text, level=0):
